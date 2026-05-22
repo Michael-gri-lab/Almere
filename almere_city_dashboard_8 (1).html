@@ -1,0 +1,1215 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Almere City FC — Commercieel Dashboard 2025–2026</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Segoe+UI:wght@300;400;500;600;700&display=swap');
+
+  :root {
+    --red: #E3001B;
+    --red-dark: #B5001A;
+    --red-light: #FF1A33;
+    --red-muted: rgba(227,0,27,0.08);
+    --red-muted2: rgba(227,0,27,0.15);
+    --white: #FFFFFF;
+    --canvas: #F3F2F1;
+    --panel: #FFFFFF;
+    --sidebar-bg: #1B1B1B;
+    --sidebar-hover: #2A2A2A;
+    --sidebar-active: #E3001B;
+    --text-primary: #1B1B1B;
+    --text-secondary: #605E5C;
+    --text-muted: #8A8886;
+    --border: #E1DFDD;
+    --border-light: #F0EEEC;
+    --success: #107C10;
+    --warning: #C68A00;
+    --danger: #A4262C;
+    --info: #0078D4;
+    --shadow: 0 1px 3px rgba(0,0,0,0.08);
+    --shadow-md: 0 2px 8px rgba(0,0,0,0.10);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; font-family: 'Segoe UI', -apple-system, sans-serif; background: var(--canvas); color: var(--text-primary); font-size: 13px; }
+
+  /* ── LAYOUT ── */
+  .shell { display: flex; height: 100vh; min-height: 700px; }
+
+  /* ── SIDEBAR ── */
+  .sidebar {
+    width: 220px; min-width: 220px; background: var(--sidebar-bg);
+    display: flex; flex-direction: column; height: 100vh; position: sticky; top: 0;
+  }
+  .sidebar-brand {
+    padding: 18px 20px 14px;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    display: flex; align-items: center; gap: 10px;
+  }
+  .brand-badge {
+    width: 34px; height: 34px; background: var(--red); border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 700; color: #fff; letter-spacing: 0.5px; flex-shrink: 0;
+  }
+  .brand-text { display: flex; flex-direction: column; }
+  .brand-name { font-size: 12px; font-weight: 600; color: #fff; line-height: 1.2; }
+  .brand-sub { font-size: 10px; color: rgba(255,255,255,0.4); line-height: 1.3; margin-top: 1px; }
+
+  .nav-section { padding: 14px 12px 4px; font-size: 10px; font-weight: 600; color: rgba(255,255,255,0.3); letter-spacing: .08em; text-transform: uppercase; }
+  .nav-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 14px; margin: 1px 8px; border-radius: 5px;
+    cursor: pointer; color: rgba(255,255,255,0.6); font-size: 12.5px;
+    transition: background .15s, color .15s;
+  }
+  .nav-item:hover { background: var(--sidebar-hover); color: rgba(255,255,255,0.9); }
+  .nav-item.active { background: var(--sidebar-active); color: #fff; font-weight: 500; }
+  .nav-item .nav-icon { font-size: 15px; width: 18px; text-align: center; }
+
+  .sidebar-footer { margin-top: auto; padding: 14px 20px; border-top: 1px solid rgba(255,255,255,0.08); }
+  .sidebar-footer-text { font-size: 10px; color: rgba(255,255,255,0.25); line-height: 1.5; }
+
+  /* ── MAIN ── */
+  .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+
+  /* ── TOPBAR ── */
+  .topbar {
+    background: var(--panel); border-bottom: 1px solid var(--border);
+    padding: 0 24px; height: 44px; display: flex; align-items: center; gap: 16px;
+    flex-shrink: 0;
+  }
+  .topbar-title { font-size: 14px; font-weight: 600; color: var(--text-primary); }
+  .topbar-sep { width: 1px; height: 18px; background: var(--border); }
+  .topbar-sub { font-size: 12px; color: var(--text-secondary); }
+  .topbar-right { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+  .topbar-badge {
+    background: var(--red-muted); color: var(--red); border: 1px solid var(--red-muted2);
+    font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 3px;
+  }
+  .topbar-date { font-size: 11px; color: var(--text-muted); }
+  .refresh-btn {
+    width: 28px; height: 28px; border: 1px solid var(--border); border-radius: 4px;
+    background: var(--panel); cursor: pointer; display: flex; align-items: center; justify-content: center;
+    color: var(--text-secondary); font-size: 13px; transition: background .15s;
+  }
+  .refresh-btn:hover { background: var(--canvas); }
+
+  /* ── CONTENT ── */
+  .content { flex: 1; overflow-y: auto; padding: 20px 24px; }
+  .page { display: none; }
+  .page.active { display: block; }
+
+  /* ── FILTER BAR ── */
+  .filter-bar { display: flex; align-items: center; gap: 8px; margin-bottom: 18px; flex-wrap: wrap; }
+  .filter-label { font-size: 11px; color: var(--text-muted); margin-right: 2px; }
+  .chip {
+    font-size: 11px; padding: 4px 10px; border-radius: 3px;
+    border: 1px solid var(--border); background: var(--panel);
+    color: var(--text-secondary); cursor: pointer; transition: all .15s;
+  }
+  .chip:hover { border-color: var(--red-muted2); color: var(--red); }
+  .chip.active { background: var(--red); border-color: var(--red); color: #fff; }
+
+  /* ── SECTION LABEL ── */
+  .section-label {
+    font-size: 10px; font-weight: 600; color: var(--text-muted);
+    text-transform: uppercase; letter-spacing: .08em; margin-bottom: 10px;
+  }
+
+  /* ── KPI ROW ── */
+  .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px; }
+  .kpi-row-5 { grid-template-columns: repeat(5, 1fr); }
+
+  .kpi {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 4px;
+    padding: 14px 16px; position: relative; overflow: hidden;
+  }
+  .kpi::before {
+    content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px;
+    background: var(--red);
+  }
+  .kpi-label { font-size: 11px; color: var(--text-secondary); margin-bottom: 4px; }
+  .kpi-value { font-size: 22px; font-weight: 300; color: var(--text-primary); line-height: 1.2; }
+  .kpi-sub { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+  .kpi-delta { font-size: 11px; margin-top: 4px; display: flex; align-items: center; gap: 3px; }
+  .kpi-delta.pos { color: var(--success); }
+  .kpi-delta.neg { color: var(--danger); }
+  .kpi-delta.warn { color: var(--warning); }
+
+  /* ── GRID ── */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+  .grid-2-1 { display: grid; grid-template-columns: 2fr 1fr; gap: 12px; margin-bottom: 12px; }
+  .grid-1-2 { display: grid; grid-template-columns: 1fr 2fr; gap: 12px; margin-bottom: 12px; }
+  .full { margin-bottom: 12px; }
+
+  /* ── CARD ── */
+  .card {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 4px;
+    padding: 16px; box-shadow: var(--shadow);
+  }
+  .card-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 14px;
+  }
+  .card-title {
+    font-size: 12px; font-weight: 600; color: var(--text-primary);
+    display: flex; align-items: center; gap: 6px;
+  }
+  .card-title-icon { color: var(--red); font-size: 14px; }
+  .card-sub { font-size: 10px; color: var(--text-muted); margin-top: 1px; }
+
+  /* ── CHART ── */
+  .chart-wrap { position: relative; }
+  .ch120 { height: 120px; }
+  .ch140 { height: 140px; }
+  .ch160 { height: 160px; }
+  .ch180 { height: 180px; }
+
+  /* ── PROGRESS ── */
+  .prog-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+  .prog-label { font-size: 11px; color: var(--text-secondary); min-width: 130px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .prog-bg { flex: 1; height: 6px; background: var(--border-light); border-radius: 2px; overflow: hidden; }
+  .prog-fill { height: 100%; border-radius: 2px; transition: width .5s cubic-bezier(.4,0,.2,1); }
+  .prog-val { font-size: 11px; font-weight: 600; color: var(--text-primary); min-width: 60px; text-align: right; }
+  .prog-amount { font-size: 10px; color: var(--text-muted); min-width: 50px; text-align: right; }
+
+  /* ── TABLE ── */
+  .tbl-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  th { font-size: 10px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: .05em; text-align: left; padding: 6px 10px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+  td { padding: 6px 10px; border-bottom: 1px solid var(--border-light); color: var(--text-primary); white-space: nowrap; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: rgba(227,0,27,0.02); }
+
+  /* ── BADGES ── */
+  .badge { display: inline-block; font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 2px; }
+  .b-success { background: rgba(16,124,16,.1); color: var(--success); }
+  .b-warn { background: rgba(198,138,0,.1); color: var(--warning); }
+  .b-danger { background: rgba(164,38,44,.1); color: var(--danger); }
+  .b-info { background: rgba(0,120,212,.1); color: var(--info); }
+  .b-red { background: var(--red-muted); color: var(--red); }
+
+  /* ── STAT ROW ── */
+  .stat-row { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--border-light); font-size: 12px; }
+  .stat-row:last-child { border-bottom: none; }
+  .stat-label { color: var(--text-secondary); }
+  .stat-val { font-weight: 600; color: var(--text-primary); }
+
+  /* ── DIVIDER ── */
+  .divider { height: 1px; background: var(--border-light); margin: 12px 0; }
+
+  /* ── ACCENT HEADER ── */
+  .accent-row {
+    background: linear-gradient(90deg, var(--red) 0%, #b5001a 100%);
+    border-radius: 4px; padding: 10px 16px; margin-bottom: 16px;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .accent-row h2 { font-size: 13px; font-weight: 600; color: #fff; }
+  .accent-row p { font-size: 11px; color: rgba(255,255,255,0.7); margin-top: 1px; }
+
+  /* scrollbar */
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  /* stadium map SVG */
+  .svg-vak rect { transition: opacity .15s; }
+  .svg-vak:hover rect { opacity: .85; cursor: default; }
+  .vak-name { font-size: 10px; font-weight: 600; fill: #fff; }
+  .vak-pct  { font-size: 11px; font-weight: 300; fill: rgba(255,255,255,0.9); }
+  .vak-biz  { font-size: 8px; fill: rgba(255,255,255,0.5); }
+  .svg-business rect { fill: #3d3d3d; }
+  .svg-business .vak-name { fill: rgba(255,255,255,0.6); }
+  .svg-uit rect { fill: #1B1B1B; }
+</style>
+  @media print {
+    .sidebar { position: relative; height: auto; }
+    .shell { display: block; }
+    .main { overflow: visible; }
+    .content { overflow: visible; }
+    .page { display: block !important; page-break-before: always; }
+    .page:first-child { page-break-before: avoid; }
+  }
+</style>
+</head>
+<body>
+<div class="shell">
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sidebar-brand">
+    <div class="brand-badge">ACFC</div>
+    <div class="brand-text">
+      <span class="brand-name">Almere City FC</span>
+      <span class="brand-sub">Commercieel dashboard</span>
+    </div>
+  </div>
+
+  <div class="nav-section">Overzicht</div>
+  <div class="nav-item active" onclick="show('main',this)">
+    <span class="nav-icon">⊞</span> Hoofddashboard
+  </div>
+
+  <div class="nav-section">Afdelingen</div>
+  <div class="nav-item" onclick="show('ticketing',this)">
+    <span class="nav-icon">🎟️</span> Ticketing
+  </div>
+  <div class="nav-item" onclick="show('wedstrijden',this)">
+    <span class="nav-icon">⚽</span> Wedstrijden
+  </div>
+  <div class="nav-item" onclick="show('sponsoring',this)">
+    <span class="nav-icon">🤝</span> Sponsoring
+  </div>
+  <div class="nav-item" onclick="show('events',this)">
+    <span class="nav-icon">🎪</span> Events
+  </div>
+  <div class="nav-item" onclick="show('horeca',this)">
+    <span class="nav-icon">🍺</span> Horeca
+  </div>
+  <div class="nav-item" onclick="show('marketing',this)">
+    <span class="nav-icon">📣</span> Marketing
+  </div>
+  <div class="nav-item" onclick="show('merchandise',this)">
+    <span class="nav-icon">👕</span> Merchandise
+  </div>
+
+  <div class="sidebar-footer">
+    <div class="sidebar-footer-text">Seizoen 2025–2026<br>Bron: AFAS / Profit<br>Bijgewerkt: 18 mei 2026</div>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<div class="main">
+  <header class="topbar">
+    <span class="topbar-title" id="page-title">Hoofddashboard</span>
+    <div class="topbar-sep"></div>
+    <span class="topbar-sub">Almere City FC — Commercieel</span>
+    <div class="topbar-right">
+      <span class="topbar-badge">Seizoen 2025–2026</span>
+      <span class="topbar-date">18 mei 2026</span>
+      <button class="refresh-btn" title="Vernieuwen">↻</button>
+    </div>
+  </header>
+
+  <div class="content">
+
+    <!-- ═══ HOOFDDASHBOARD ═══ -->
+    <div class="page active" id="page-main">
+      <div class="kpi-row" style="grid-template-columns:repeat(2,1fr);">
+        <div class="kpi">
+          <div class="kpi-label">Totale omzet</div>
+          <div class="kpi-value">€ 2,14M</div>
+          <div class="kpi-sub">Target: € 2,80M</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-label">Realisatie t.o.v. target</div>
+          <div class="kpi-value">76%</div>
+          <div class="kpi-delta pos">▲ +4% t.o.v. vorig seizoen</div>
+        </div>
+      </div>
+
+      <div class="grid-2-1">
+        <div class="card">
+          <div class="card-header">
+            <div><div class="card-title">Omzetontwikkeling per maand</div><div class="card-sub">Huidig seizoen vs. vorig seizoen</div></div>
+          </div>
+          <div class="chart-wrap ch160"><canvas id="c-main-omzet"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <div><div class="card-title">Omzetverdeling</div><div class="card-sub">Per afdeling — YTD</div></div>
+          </div>
+          <div class="chart-wrap ch160"><canvas id="c-main-pie"></canvas></div>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-header"><div class="card-title">Target vs. realisatie per afdeling</div></div>
+          <div class="prog-row"><span class="prog-label">Sponsoring</span><div class="prog-bg"><div class="prog-fill" style="width:83%;background:#E3001B"></div></div><span class="prog-val">83%</span><span class="prog-amount">€ 912K</span></div>
+          <div class="prog-row"><span class="prog-label">Horeca</span><div class="prog-bg"><div class="prog-fill" style="width:88%;background:#E3001B"></div></div><span class="prog-val">88%</span><span class="prog-amount">€ 394K</span></div>
+          <div class="prog-row"><span class="prog-label">Marketing</span><div class="prog-bg"><div class="prog-fill" style="width:71%;background:#c0001a"></div></div><span class="prog-val">71%</span><span class="prog-amount">€ 213K</span></div>
+          <div class="prog-row"><span class="prog-label">Events</span><div class="prog-bg"><div class="prog-fill" style="width:61%;background:#8a0012"></div></div><span class="prog-val">61%</span><span class="prog-amount">€ 255K</span></div>
+          <div class="prog-row"><span class="prog-label">Merchandise</span><div class="prog-bg"><div class="prog-fill" style="width:54%;background:#5a0009"></div></div><span class="prog-val">54%</span><span class="prog-amount">€ 162K</span></div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">Signalering</div><div class="card-sub">Afwijkingen ≥10% van target</div></div>
+          <div class="stat-row"><span class="stat-label">Merchandise — fors onder target</span><span class="badge b-danger">−46%</span></div>
+          <div class="stat-row"><span class="stat-label">Events — conversie laag</span><span class="badge b-warn">38% conversie</span></div>
+          <div class="stat-row"><span class="stat-label">Horeca — statiegeld verschil</span><span class="badge b-warn">−€2.100</span></div>
+          <div class="stat-row"><span class="stat-label">Sponsoring — retentie op schema</span><span class="badge b-success">87%</span></div>
+          <div class="stat-row"><span class="stat-label">Marketing — database achter</span><span class="badge b-warn">71% target</span></div>
+        </div>
+      </div>
+
+      <div class="card full" style="margin-bottom:0;">
+        <div class="card-header">
+          <div class="card-title">Voortgang t.o.v. target — op schema?</div>
+          <div class="card-sub">Nog 6 weken tot einde seizoen (30 jun) · verwacht einderesultaat o.b.v. huidig tempo</div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-top:4px;">
+          <div style="background:var(--canvas);border-radius:4px;padding:12px;">
+            <div style="font-size:11px;font-weight:600;color:var(--text-secondary);margin-bottom:8px;">🎟️ Ticketing</div>
+            <div style="font-size:18px;font-weight:300;color:var(--text-primary);">88%</div>
+            <div style="font-size:10px;color:var(--text-muted);margin-bottom:8px;">1.931 van 2.200 SK</div>
+            <div style="height:5px;background:var(--border);border-radius:2px;overflow:hidden;margin-bottom:6px;"><div style="width:88%;height:100%;background:#107C10;border-radius:2px;"></div></div>
+            <div style="font-size:10px;color:var(--success);font-weight:600;">✓ Op schema</div>
+            <div style="font-size:10px;color:var(--text-muted);margin-top:2px;">Verwacht: ~2.180 (99%)</div>
+          </div>
+          <div style="background:var(--canvas);border-radius:4px;padding:12px;">
+            <div style="font-size:11px;font-weight:600;color:var(--text-secondary);margin-bottom:8px;">👕 Merchandise</div>
+            <div style="font-size:18px;font-weight:300;color:var(--text-primary);">54%</div>
+            <div style="font-size:10px;color:var(--text-muted);margin-bottom:8px;">€ 162K van € 300K</div>
+            <div style="height:5px;background:var(--border);border-radius:2px;overflow:hidden;margin-bottom:6px;"><div style="width:54%;height:100%;background:#A4262C;border-radius:2px;"></div></div>
+            <div style="font-size:10px;color:var(--danger);font-weight:600;">✗ Niet op schema</div>
+            <div style="font-size:10px;color:var(--text-muted);margin-top:2px;">Verwacht: ~€ 198K (66%)</div>
+          </div>
+          <div style="background:var(--canvas);border-radius:4px;padding:12px;">
+            <div style="font-size:11px;font-weight:600;color:var(--text-secondary);margin-bottom:8px;">🎪 Events</div>
+            <div style="font-size:18px;font-weight:300;color:var(--text-primary);">61%</div>
+            <div style="font-size:10px;color:var(--text-muted);margin-bottom:8px;">68 van 90 events</div>
+            <div style="height:5px;background:var(--border);border-radius:2px;overflow:hidden;margin-bottom:6px;"><div style="width:61%;height:100%;background:#C68A00;border-radius:2px;"></div></div>
+            <div style="font-size:10px;color:var(--warning);font-weight:600;">⚠ Risico</div>
+            <div style="font-size:10px;color:var(--text-muted);margin-top:2px;">Verwacht: ~80 events (89%)</div>
+          </div>
+          <div style="background:var(--canvas);border-radius:4px;padding:12px;">
+            <div style="font-size:11px;font-weight:600;color:var(--text-secondary);margin-bottom:8px;">🍺 Horeca</div>
+            <div style="font-size:18px;font-weight:300;color:var(--text-primary);">88%</div>
+            <div style="font-size:10px;color:var(--text-muted);margin-bottom:8px;">€ 394K van € 448K</div>
+            <div style="height:5px;background:var(--border);border-radius:2px;overflow:hidden;margin-bottom:6px;"><div style="width:88%;height:100%;background:#107C10;border-radius:2px;"></div></div>
+            <div style="font-size:10px;color:var(--success);font-weight:600;">✓ Op schema</div>
+            <div style="font-size:10px;color:var(--text-muted);margin-top:2px;">Verwacht: ~€ 442K (99%)</div>
+          </div>
+          <div style="background:var(--canvas);border-radius:4px;padding:12px;">
+            <div style="font-size:11px;font-weight:600;color:var(--text-secondary);margin-bottom:8px;">📣 Marketing</div>
+            <div style="font-size:18px;font-weight:300;color:var(--text-primary);">71%</div>
+            <div style="font-size:10px;color:var(--text-muted);margin-bottom:8px;">34.200 van 48.000 DB</div>
+            <div style="height:5px;background:var(--border);border-radius:2px;overflow:hidden;margin-bottom:6px;"><div style="width:71%;height:100%;background:#C68A00;border-radius:2px;"></div></div>
+            <div style="font-size:10px;color:var(--warning);font-weight:600;">⚠ Risico</div>
+            <div style="font-size:10px;color:var(--text-muted);margin-top:2px;">Verwacht: ~36.400 (76%)</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ WEDSTRIJDEN ═══ -->
+    <div class="page" id="page-wedstrijden">
+      <div class="filter-bar">
+        <span class="filter-label">Categorie:</span>
+        <span class="chip active">Alle</span>
+        <span class="chip">Cat. 1 — Top 7</span>
+        <span class="chip">Cat. 2 — Pos. 8–20</span>
+        <span class="chip">Cat. 3 — Jong-teams</span>
+      </div>
+      <div class="kpi-row kpi-row-5">
+        <div class="kpi"><div class="kpi-label">Gem. bezoekers</div><div class="kpi-value">6.840</div><div class="kpi-sub">Show %: 91%</div></div>
+        <div class="kpi"><div class="kpi-label">Gem. horeca-omzet</div><div class="kpi-value">€ 38.200</div><div class="kpi-sub">Per wedstrijd</div></div>
+        <div class="kpi"><div class="kpi-label">Gem. ticketomzet</div><div class="kpi-value">€ 54.600</div><div class="kpi-sub">Incl. seizoenskaarten</div></div>
+        <div class="kpi"><div class="kpi-label">Gem. merch-omzet</div><div class="kpi-value">€ 8.900</div><div class="kpi-sub">Wedstrijddag</div></div>
+        <div class="kpi"><div class="kpi-label">Prognose volgende</div><div class="kpi-value">AZ</div><div class="kpi-sub">Cat. 1 — 1 jun</div></div>
+      </div>
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-header"><div class="card-title">Bezoekerspiek — gem. thuiswedstrijd</div><div class="card-sub">Bestellingen per tijdvak</div></div>
+          <div class="chart-wrap ch140"><canvas id="c-wed-piek"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">Prognose — AZ (Cat. 1, 1 jun)</div></div>
+          <div class="stat-row"><span class="stat-label">Verwachte bezoekers</span><span class="stat-val">8.050</span></div>
+          <div class="stat-row"><span class="stat-label">Verwachte horeca-omzet</span><span class="stat-val">€ 51.000</span></div>
+          <div class="stat-row"><span class="stat-label">Verwachte ticketomzet</span><span class="stat-val">€ 73.500</span></div>
+          <div class="stat-row"><span class="stat-label">Verwachte merch-omzet</span><span class="stat-val">€ 14.200</span></div>
+          <div class="stat-row"><span class="stat-label">Weersvoorspelling</span><span class="stat-val">☀️ 21°C</span></div>
+          <div class="divider"></div>
+          <div style="font-size:10px;color:var(--text-muted)">O.b.v. Cat. 1 historische data + zomerweer</div>
+        </div>
+      </div>
+      <div class="card full">
+        <div class="card-header"><div class="card-title">Thuiswedstrijden 2025–2026 — overzicht</div></div>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th>Datum</th><th>Tegenstander</th><th>Cat.</th><th>Bezoekers</th><th>Show %</th><th>Horeca</th><th>Ticket</th><th>Merch</th><th>Best./pers.</th><th>Weer</th></tr></thead>
+            <tbody>
+              <tr><td>9 aug</td><td>Roda JC</td><td><span class="badge b-info">Cat. 2</span></td><td>6.420</td><td>89%</td><td>€34.100</td><td>€48.300</td><td>€7.200</td><td>€5,31</td><td>☀️ 22°C</td></tr>
+              <tr><td>23 aug</td><td>Jong Ajax</td><td><span class="badge b-warn">Cat. 3</span></td><td>5.180</td><td>76%</td><td>€26.400</td><td>€38.900</td><td>€5.100</td><td>€5,09</td><td>🌧 14°C</td></tr>
+              <tr><td>13 sep</td><td>FC Groningen</td><td><span class="badge b-info">Cat. 2</span></td><td>7.050</td><td>94%</td><td>€41.200</td><td>€57.800</td><td>€9.400</td><td>€5,84</td><td>⛅ 17°C</td></tr>
+              <tr><td>4 okt</td><td>PSV</td><td><span class="badge b-red">Cat. 1</span></td><td>8.120</td><td>99%</td><td>€52.700</td><td>€74.500</td><td>€14.800</td><td>€6,49</td><td>☀️ 19°C</td></tr>
+              <tr><td>25 okt</td><td>NAC Breda</td><td><span class="badge b-info">Cat. 2</span></td><td>6.730</td><td>90%</td><td>€37.500</td><td>€53.200</td><td>€8.600</td><td>€5,57</td><td>🌧 11°C</td></tr>
+              <tr><td>22 nov</td><td>Ajax</td><td><span class="badge b-red">Cat. 1</span></td><td>8.200</td><td>100%</td><td>€55.300</td><td>€76.100</td><td>€16.200</td><td>€6,74</td><td>⛅ 9°C</td></tr>
+              <tr><td>14 feb</td><td>Jong PSV</td><td><span class="badge b-warn">Cat. 3</span></td><td>4.960</td><td>73%</td><td>€24.800</td><td>€36.700</td><td>€4.800</td><td>€5,00</td><td>🌧 7°C</td></tr>
+              <tr><td>7 mrt</td><td>Feyenoord</td><td><span class="badge b-red">Cat. 1</span></td><td>8.200</td><td>100%</td><td>€56.900</td><td>€77.400</td><td>€17.100</td><td>€6,94</td><td>☀️ 13°C</td></tr>
+              <tr><td>4 apr</td><td>NEC</td><td><span class="badge b-info">Cat. 2</span></td><td>6.580</td><td>88%</td><td>€36.200</td><td>€51.400</td><td>€8.100</td><td>€5,50</td><td>☀️ 16°C</td></tr>
+              <tr><td>2 mei</td><td>FC Utrecht</td><td><span class="badge b-info">Cat. 2</span></td><td>7.100</td><td>95%</td><td>€42.600</td><td>€59.300</td><td>€9.800</td><td>€6,00</td><td>☀️ 18°C</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ SPONSORING ═══ -->
+    <div class="page" id="page-sponsoring">
+      <!-- top: omzet KPI + 2 donuts + CRM -->
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px;margin-bottom:16px;">
+
+        <!-- Omzet KPI -->
+        <div class="kpi" style="display:flex;flex-direction:column;justify-content:center;">
+          <div class="kpi-label">Sponsoromzet totaal</div>
+          <div class="kpi-value">€ 912K</div>
+          <div class="kpi-sub">Target: € 1,10M</div>
+          <div class="kpi-delta pos" style="margin-top:6px;">▲ +5% t.o.v. vorig seizoen</div>
+          <div class="kpi-label" style="margin-top:10px;">Nieuwe partners</div>
+          <div style="font-size:20px;font-weight:300;color:var(--text-primary);">14</div>
+          <div class="kpi-delta pos">▲ 9 leads in pijplijn</div>
+        </div>
+
+        <!-- Donut: Realisatie % -->
+        <div class="card" style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:14px;">
+          <div class="card-title" style="margin-bottom:8px;">Realisatie t.o.v. target</div>
+          <div style="position:relative;width:110px;height:110px;">
+            <canvas id="c-spon-donut-real"></canvas>
+            <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;">
+              <span style="font-size:22px;font-weight:300;color:var(--text-primary);">83%</span>
+            </div>
+          </div>
+          <div style="font-size:10px;color:var(--text-muted);margin-top:6px;">€ 912K van € 1,10M</div>
+        </div>
+
+        <!-- Donut: Retentie % -->
+        <div class="card" style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:14px;">
+          <div class="card-title" style="margin-bottom:8px;">Retentie bestaande partners</div>
+          <div style="position:relative;width:110px;height:110px;">
+            <canvas id="c-spon-donut-ret"></canvas>
+            <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;">
+              <span style="font-size:22px;font-weight:300;color:var(--text-primary);">87%</span>
+            </div>
+          </div>
+          <div style="font-size:10px;color:var(--text-muted);margin-top:6px;">26 van 30 partners verlengd</div>
+        </div>
+
+        <!-- CRM pijplijn -->
+        <div class="card">
+          <div class="card-header"><div class="card-title">CRM-pijplijn (OnePageCRM)</div></div>
+          <div class="stat-row"><span class="stat-label">Leads totaal</span><span class="stat-val">41</span></div>
+          <div class="stat-row"><span class="stat-label">Offerte verstuurd</span><span class="stat-val">22</span></div>
+          <div class="stat-row"><span class="stat-label">In onderhandeling</span><span class="stat-val">9</span></div>
+          <div class="stat-row"><span class="stat-label">Getekend (nieuw)</span><span class="stat-val" style="color:var(--success)">14</span></div>
+          <div class="stat-row"><span class="stat-label">Verloren deals</span><span class="stat-val" style="color:var(--danger)">5</span></div>
+          <div class="stat-row"><span class="stat-label">Conversie %</span><span class="stat-val" style="color:var(--success)">34%</span></div>
+        </div>
+      </div>
+
+      <!-- Target vs realisatie per categorie — met overperformance markering -->
+      <div class="card full">
+        <div class="card-header">
+          <div class="card-title">Target vs. realisatie per categorie</div>
+          <div class="card-sub">Bron: AFAS/Profit — gefactureerde omzet · balk > 100% = boven target</div>
+        </div>
+        <!-- Shirtsponsoring 106% — boven target -->
+        <div class="prog-row">
+          <span class="prog-label">Shirtsponsoring</span>
+          <div class="prog-bg" style="position:relative;overflow:visible;">
+            <div class="prog-fill" style="width:100%;background:#E3001B;border-radius:2px;"></div>
+            <div style="position:absolute;left:0;top:-14px;width:calc(106/100 * 100%);max-width:106%;"></div>
+          </div>
+          <span class="prog-val" style="color:var(--success);font-size:12px;">106% ✓</span>
+          <span class="prog-amount">€ 222K</span>
+        </div>
+        <!-- Vaste boarding 100% -->
+        <div class="prog-row">
+          <span class="prog-label">Vaste boarding</span>
+          <div class="prog-bg"><div class="prog-fill" style="width:100%;background:#E3001B;"></div></div>
+          <span class="prog-val" style="color:var(--success);font-size:12px;">100% ✓</span>
+          <span class="prog-amount">€ 95K</span>
+        </div>
+        <!-- Business seats 91% -->
+        <div class="prog-row">
+          <span class="prog-label">Business seats</span>
+          <div class="prog-bg"><div class="prog-fill" style="width:91%;background:#E3001B;"></div></div>
+          <span class="prog-val">91%</span>
+          <span class="prog-amount">€ 182K</span>
+        </div>
+        <!-- Wedstrijdarrangementen 79% -->
+        <div class="prog-row">
+          <span class="prog-label">Wedstrijdarrangementen</span>
+          <div class="prog-bg"><div class="prog-fill" style="width:79%;background:#c0001a;"></div></div>
+          <span class="prog-val">79%</span>
+          <span class="prog-amount">€ 118K</span>
+        </div>
+        <!-- LED boarding 74% -->
+        <div class="prog-row">
+          <span class="prog-label">LED boarding</span>
+          <div class="prog-bg"><div class="prog-fill" style="width:74%;background:#c0001a;"></div></div>
+          <span class="prog-val">74%</span>
+          <span class="prog-amount">€ 148K</span>
+        </div>
+        <!-- Sponsoractivaties 64% -->
+        <div class="prog-row">
+          <span class="prog-label">Sponsoractivaties</span>
+          <div class="prog-bg"><div class="prog-fill" style="width:64%;background:#8a0012;"></div></div>
+          <span class="prog-val">64%</span>
+          <span class="prog-amount">€ 81K</span>
+        </div>
+        <!-- Skyboxverkoop 52% -->
+        <div class="prog-row">
+          <span class="prog-label">Skyboxverkoop</span>
+          <div class="prog-bg"><div class="prog-fill" style="width:52%;background:#5a0009;"></div></div>
+          <span class="prog-val" style="color:var(--danger);">52%</span>
+          <span class="prog-amount">€ 78K</span>
+        </div>
+        <div style="margin-top:10px;font-size:10px;color:var(--text-muted);">✓ = boven of op target &nbsp;·&nbsp; rood getal = aandacht vereist</div>
+      </div>
+    </div>
+
+    <!-- ═══ EVENTS ═══ -->
+    <div class="page" id="page-events">
+      <div class="kpi-row">
+        <div class="kpi"><div class="kpi-label">Aantal events (YTD)</div><div class="kpi-value">68</div><div class="kpi-sub">Target: 90 / seizoen</div></div>
+        <div class="kpi"><div class="kpi-label">Totale marge</div><div class="kpi-value">€ 87K</div><div class="kpi-sub">Marge %: 34%</div></div>
+        <div class="kpi"><div class="kpi-label">Conversie</div><div class="kpi-value">38%</div><div class="kpi-delta neg">▼ target: 50%</div></div>
+        <div class="kpi"><div class="kpi-label">Herhalingspercentage</div><div class="kpi-value">22%</div><div class="kpi-delta pos">▲ groeiend</div></div>
+      </div>
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-header"><div class="card-title">Aantal events per maand</div></div>
+          <div class="chart-wrap ch140"><canvas id="c-ev-maand"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">Herkomst aanvragen</div><div class="card-sub">Huidig seizoen</div></div>
+          <div class="chart-wrap ch140"><canvas id="c-ev-herkomst"></canvas></div>
+        </div>
+      </div>
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-header"><div class="card-title">F&B vs. non-F&B omzet</div><div class="card-sub">Per kwartaal</div></div>
+          <div class="chart-wrap ch140"><canvas id="c-ev-fnb"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">Omzet per ruimte</div></div>
+          <div class="chart-wrap ch140"><canvas id="c-ev-ruimte"></canvas></div>
+        </div>
+      </div>
+      <div class="card full">
+        <div class="card-header"><div class="card-title">Recent afgesloten events</div><div class="card-sub">Bron: Excel (eventmanager) — automatisering gepland</div></div>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th>Datum</th><th>Klant</th><th>Ruimte</th><th>Personen</th><th>F&B omzet</th><th>Non-F&B</th><th>Kosten</th><th>Marge %</th></tr></thead>
+            <tbody>
+              <tr><td>3 mei</td><td>Decathlon NL</td><td>Business lounge</td><td>120</td><td>€4.800</td><td>€6.200</td><td>€4.900</td><td><span class="badge b-success">55%</span></td></tr>
+              <tr><td>8 mei</td><td>Van Duijn BV</td><td>Skybox</td><td>18</td><td>€1.100</td><td>€900</td><td>€980</td><td><span class="badge b-success">51%</span></td></tr>
+              <tr><td>12 mei</td><td>De Bos Rental</td><td>Vergaderzaal</td><td>12</td><td>€480</td><td>€350</td><td>€640</td><td><span class="badge b-warn">29%</span></td></tr>
+              <tr><td>15 mei</td><td>Saporito Catering</td><td>Business lounge</td><td>85</td><td>€3.200</td><td>€4.100</td><td>€3.600</td><td><span class="badge b-success">52%</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ HORECA ═══ -->
+    <div class="page" id="page-horeca">
+      <div class="filter-bar">
+        <span class="filter-label">Periode:</span>
+        <span class="chip active">Alle</span>
+        <span class="chip">Wedstrijddagen</span>
+        <span class="chip">Niet-wedstrijddagen</span>
+      </div>
+      <div class="kpi-row">
+        <div class="kpi"><div class="kpi-label">Totale omzet horeca</div><div class="kpi-value">€ 394K</div><div class="kpi-sub">Target: € 448K</div></div>
+        <div class="kpi"><div class="kpi-label">Besteding/persoon</div><div class="kpi-value">€ 5,60</div><div class="kpi-sub">Gem. per wedstrijd</div></div>
+        <div class="kpi"><div class="kpi-label">Marge %</div><div class="kpi-value">41%</div><div class="kpi-delta pos">Excl. statiegeld</div></div>
+        <div class="kpi"><div class="kpi-label">Statiegeld verlies</div><div class="kpi-value">−€ 2.100</div><div class="kpi-delta neg">▼ YTD verliespost</div></div>
+      </div>
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-header"><div class="card-title">Bestellingen per tijdvak</div><div class="card-sub">Gemiddelde thuiswedstrijd</div></div>
+          <div class="chart-wrap ch140"><canvas id="c-hor-tijdvak"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">Omzet per verkooppunt</div><div class="card-sub">Bron: Chef kassasysteem</div></div>
+          <div class="chart-wrap ch140"><canvas id="c-hor-punt"></canvas></div>
+        </div>
+      </div>
+      <div class="card full">
+        <div class="card-header"><div class="card-title">Externe factoren — invloed op horeca-omzet</div><div class="card-sub">Patroon: Cat. 1 + avond + mild weer = hogere besteding</div></div>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th>Wedstrijd</th><th>Tegenstander</th><th>Cat.</th><th>Aanvang</th><th>Temp.</th><th>Bezoekers</th><th>Horeca</th><th>Best./pers.</th></tr></thead>
+            <tbody>
+              <tr><td>4 okt</td><td>PSV</td><td><span class="badge b-red">Cat. 1</span></td><td>20:00</td><td>19°C ☀️</td><td>8.120</td><td>€52.700</td><td>€6,49</td></tr>
+              <tr><td>25 okt</td><td>NAC Breda</td><td><span class="badge b-info">Cat. 2</span></td><td>18:30</td><td>11°C 🌧</td><td>6.730</td><td>€37.500</td><td>€5,57</td></tr>
+              <tr><td>22 nov</td><td>Ajax</td><td><span class="badge b-red">Cat. 1</span></td><td>14:30</td><td>9°C ⛅</td><td>8.200</td><td>€55.300</td><td>€6,74</td></tr>
+              <tr><td>14 feb</td><td>Jong PSV</td><td><span class="badge b-warn">Cat. 3</span></td><td>12:30</td><td>7°C 🌧</td><td>4.960</td><td>€24.800</td><td>€5,00</td></tr>
+              <tr><td>7 mrt</td><td>Feyenoord</td><td><span class="badge b-red">Cat. 1</span></td><td>20:00</td><td>13°C ☀️</td><td>8.200</td><td>€56.900</td><td>€6,94</td></tr>
+              <tr><td>2 mei</td><td>FC Utrecht</td><td><span class="badge b-info">Cat. 2</span></td><td>14:30</td><td>18°C ☀️</td><td>7.100</td><td>€42.600</td><td>€6,00</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ MARKETING ═══ -->
+    <div class="page" id="page-marketing">
+      <div class="kpi-row" style="grid-template-columns:repeat(5,1fr);">
+        <div class="kpi"><div class="kpi-label">Databasegrootte</div><div class="kpi-value">34.200</div><div class="kpi-delta pos">▲ +4.200 dit seizoen</div></div>
+        <div class="kpi"><div class="kpi-label">Actieve klantrelaties</div><div class="kpi-value">11.840</div><div class="kpi-sub">Fans met aantoonbare interactie</div></div>
+        <div class="kpi"><div class="kpi-label">SSO-accounts</div><div class="kpi-value">8.620</div><div class="kpi-delta pos">▲ +1.140 dit seizoen</div></div>
+        <div class="kpi"><div class="kpi-label">Mailbare profielen</div><div class="kpi-value">19.800</div><div class="kpi-sub">58% van database</div></div>
+        <div class="kpi"><div class="kpi-label">Golden records</div><div class="kpi-value">7.400</div><div class="kpi-sub">22% volledig ingevuld</div></div>
+      </div>
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-header"><div class="card-title">Databasegroei per maand</div><div class="card-sub">Totaal · Mailbaar · SSO — Bron: Vandalist / Brevo</div></div>
+          <div class="chart-wrap ch140"><canvas id="c-mkt-db"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">App & social media</div><div class="card-sub">Bron: Azerion / social platforms</div></div>
+          <div class="stat-row"><span class="stat-label">App actieve gebruikers</span><span class="stat-val">8.420</span></div>
+          <div class="stat-row"><span class="stat-label">Instagram volgers</span><span class="stat-val">41.200</span></div>
+          <div class="stat-row"><span class="stat-label">Facebook volgers</span><span class="stat-val">28.700</span></div>
+          <div class="stat-row"><span class="stat-label">TikTok volgers</span><span class="stat-val">12.900</span></div>
+          <div class="stat-row"><span class="stat-label">Gem. bereik per post</span><span class="stat-val">9.300</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ MERCHANDISE ═══ -->
+    <div class="page" id="page-merchandise">
+      <div class="kpi-row">
+        <div class="kpi"><div class="kpi-label">Totale omzet</div><div class="kpi-value">€ 162K</div><div class="kpi-sub">Target: € 300K</div></div>
+        <div class="kpi"><div class="kpi-label">Webshop (Shopify)</div><div class="kpi-value">€ 98K</div><div class="kpi-delta pos">60% van totaal</div></div>
+        <div class="kpi"><div class="kpi-label">Fanshop</div><div class="kpi-value">€ 64K</div><div class="kpi-sub">Incl. wedstrijddagen</div></div>
+        <div class="kpi"><div class="kpi-label">Netto marge</div><div class="kpi-value">38%</div><div class="kpi-sub">Na inkoop</div></div>
+      </div>
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-header"><div class="card-title">Omzetontwikkeling (seizoen)</div><div class="card-sub">Huidig vs. vorig seizoen</div></div>
+          <div class="chart-wrap ch140"><canvas id="c-mch-trend"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">Omzet per kanaal — kwartaal</div></div>
+          <div class="chart-wrap ch140"><canvas id="c-mch-kanaal"></canvas></div>
+        </div>
+      </div>
+      <div class="card full">
+        <div class="card-header"><div class="card-title">Artikeloverzicht — top producten</div><div class="card-sub">Let op: offline/online niet volledig geïntegreerd tot zomer 2026</div></div>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th>Artikel</th><th>Verkocht</th><th>Omzet</th><th>Marge %</th><th>Voorraad</th><th>Trend</th></tr></thead>
+            <tbody>
+              <tr><td>Thuisshirt 2025/26</td><td>612</td><td>€36.700</td><td>42%</td><td>148</td><td><span class="badge b-success">↑ stijgend</span></td></tr>
+              <tr><td>Uitshirt 2025/26</td><td>389</td><td>€23.300</td><td>40%</td><td>94</td><td><span class="badge b-info">→ stabiel</span></td></tr>
+              <tr><td>Sjaal ACFC</td><td>244</td><td>€7.300</td><td>58%</td><td>312</td><td><span class="badge b-info">→ stabiel</span></td></tr>
+              <tr><td>Kindershirt (thuis)</td><td>178</td><td>€8.900</td><td>38%</td><td>67</td><td><span class="badge b-warn">↓ langzaam</span></td></tr>
+              <tr><td>Cap ACFC</td><td>156</td><td>€4.700</td><td>62%</td><td>204</td><td><span class="badge b-success">↑ stijgend</span></td></tr>
+              <tr><td>Limited Baker shirt</td><td>88</td><td>€6.200</td><td>44%</td><td>12</td><td><span class="badge b-danger">↓ kindermaten stagneren</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ TICKETING ═══ -->
+    <div class="page" id="page-ticketing">
+      <div class="kpi-row" style="grid-template-columns:repeat(5,1fr);">
+        <div class="kpi"><div class="kpi-label">Seizoenskaarten</div><div class="kpi-value">1.931</div><div class="kpi-sub">Target: 2.200 · 88%</div></div>
+        <div class="kpi"><div class="kpi-label">Losse tickets (YTD)</div><div class="kpi-value">42.480</div><div class="kpi-delta pos">▲ +8% t.o.v. vorig seizoen</div></div>
+        <div class="kpi"><div class="kpi-label">Uitkaarthouders</div><div class="kpi-value">3.840</div></div>
+        <div class="kpi"><div class="kpi-label">Unieke kopers</div><div class="kpi-value">14.620</div><div class="kpi-sub">Verschillende personen</div></div>
+        <div class="kpi"><div class="kpi-label">Gem. bezetting</div><div class="kpi-value">91%</div><div class="kpi-delta pos">▲ van 8.200 capaciteit</div></div>
+      </div>
+
+      <!-- Stadium seat map -->
+      <div class="card full" style="margin-bottom:12px;">
+        <div class="card-header" style="align-items:flex-start;">
+          <div>
+            <div class="card-title" id="stadium-card-title">Bezetting per vak — Gemiddeld alle wedstrijden</div>
+            <div class="card-sub">Yanmar Stadion · capaciteit 8.200</div>
+          </div>
+          <div style="margin-left:auto;">
+            <select id="wedstrijd-select" onchange="updateStadionMap(this.value)" style="font-family:'Segoe UI',sans-serif;font-size:12px;padding:5px 10px;border:1px solid var(--border);border-radius:4px;background:var(--panel);color:var(--text-primary);cursor:pointer;outline:none;">
+              <option value="gem">— Gemiddeld alle wedstrijden —</option>
+              <option value="w1">9 aug · Roda JC (Cat. 2)</option>
+              <option value="w2">23 aug · Jong Ajax (Cat. 3)</option>
+              <option value="w3">13 sep · FC Groningen (Cat. 2)</option>
+              <option value="w4">4 okt · PSV (Cat. 1)</option>
+              <option value="w5">25 okt · NAC Breda (Cat. 2)</option>
+              <option value="w6">22 nov · Ajax (Cat. 1)</option>
+              <option value="w7">14 feb · Jong PSV (Cat. 3)</option>
+              <option value="w8">7 mrt · Feyenoord (Cat. 1)</option>
+              <option value="w9">4 apr · NEC (Cat. 2)</option>
+              <option value="w10">2 mei · FC Utrecht (Cat. 2)</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="display:flex;justify-content:center;padding:16px 0 8px;">
+          <svg id="yanmar-map" viewBox="0 0 640 400" width="640" height="400" xmlns="http://www.w3.org/2000/svg" style="font-family:'Segoe UI',sans-serif;">
+
+            <!-- ═══ SPEELVELD ═══ -->
+            <rect x="112" y="72" width="380" height="242" rx="4" fill="#2e6b27"/>
+            <!-- veldlijnen -->
+            <rect x="118" y="78" width="368" height="230" rx="2" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="1.5"/>
+            <line x1="302" y1="78" x2="302" y2="308" stroke="rgba(255,255,255,0.5)" stroke-width="1"/>
+            <circle cx="302" cy="193" r="36" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="1"/>
+            <circle cx="302" cy="193" r="3" fill="rgba(255,255,255,0.7)"/>
+            <rect x="118" y="160" width="32" height="66" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="1"/>
+            <rect x="452" y="160" width="34" height="66" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="1"/>
+
+            <!-- ═══ BOVENVAKKEN ═══ -->
+            <!-- A1 -->
+            <g id="svg-A1" class="svg-vak" data-vak="A1">
+              <rect x="112" y="20" width="68" height="44" rx="4"/>
+              <text x="146" y="38" text-anchor="middle" class="vak-name">A1</text>
+              <text x="146" y="55" text-anchor="middle" class="vak-pct" id="pct-A1"></text>
+            </g>
+            <!-- A2 -->
+            <g id="svg-A2" class="svg-vak" data-vak="A2">
+              <rect x="186" y="20" width="68" height="44" rx="4"/>
+              <text x="220" y="38" text-anchor="middle" class="vak-name">A2</text>
+              <text x="220" y="55" text-anchor="middle" class="vak-pct" id="pct-A2"></text>
+            </g>
+            <!-- B — business, geen % -->
+            <g id="svg-B" class="svg-vak svg-business" data-vak="B" data-business="1">
+              <rect x="260" y="20" width="84" height="44" rx="4"/>
+              <text x="302" y="38" text-anchor="middle" class="vak-name">B</text>
+              <text x="302" y="53" text-anchor="middle" class="vak-biz">Business</text>
+            </g>
+            <!-- C1 -->
+            <g id="svg-C1" class="svg-vak" data-vak="C1">
+              <rect x="350" y="20" width="56" height="44" rx="4"/>
+              <text x="378" y="38" text-anchor="middle" class="vak-name">C1</text>
+              <text x="378" y="55" text-anchor="middle" class="vak-pct" id="pct-C1"></text>
+            </g>
+            <!-- C2 -->
+            <g id="svg-C2" class="svg-vak" data-vak="C2">
+              <rect x="412" y="20" width="56" height="44" rx="4"/>
+              <text x="440" y="38" text-anchor="middle" class="vak-name">C2</text>
+              <text x="440" y="55" text-anchor="middle" class="vak-pct" id="pct-C2"></text>
+            </g>
+            <!-- C3 -->
+            <g id="svg-C3" class="svg-vak" data-vak="C3">
+              <rect x="474" y="20" width="18" height="44" rx="4"/>
+              <text x="483" y="38" text-anchor="middle" class="vak-name" style="font-size:8px;">C3</text>
+              <text x="483" y="53" text-anchor="middle" class="vak-pct" id="pct-C3" style="font-size:8px;"></text>
+            </g>
+
+            <!-- ═══ UITVAK rechts boven ═══ -->
+            <g id="svg-Uitvak" class="svg-vak svg-uit">
+              <rect x="498" y="20" width="70" height="44" rx="4" fill="#1B1B1B"/>
+              <text x="533" y="38" text-anchor="middle" class="vak-name" fill="#fff">Uitvak</text>
+              <text x="533" y="54" text-anchor="middle" fill="rgba(255,255,255,0.55)" style="font-size:9px;">bezoeker</text>
+            </g>
+
+            <!-- ═══ LINKERZIJDE: BT2 boven BT1 ═══ -->
+            <!-- BT2 — business -->
+            <g id="svg-BT2" class="svg-vak svg-business" data-vak="BT2" data-business="1">
+              <rect x="20" y="72" width="84" height="80" rx="4"/>
+              <text x="62" y="110" text-anchor="middle" class="vak-name">BT2</text>
+              <text x="62" y="126" text-anchor="middle" class="vak-biz">Business</text>
+            </g>
+            <!-- BT1 — business -->
+            <g id="svg-BT1" class="svg-vak svg-business" data-vak="BT1" data-business="1">
+              <rect x="20" y="160" width="84" height="154" rx="4"/>
+              <text x="62" y="237" text-anchor="middle" class="vak-name">BT1</text>
+              <text x="62" y="255" text-anchor="middle" class="vak-biz">Business</text>
+            </g>
+
+            <!-- ═══ RECHTERZIJDE: D ═══ -->
+            <g id="svg-D" class="svg-vak" data-vak="D">
+              <rect x="500" y="72" width="84" height="242" rx="4"/>
+              <text x="542" y="188" text-anchor="middle" class="vak-name">D</text>
+              <text x="542" y="208" text-anchor="middle" class="vak-pct" id="pct-D"></text>
+            </g>
+
+            <!-- ═══ ONDERVAKKEN ═══ -->
+            <!-- G3 -->
+            <g id="svg-G3" class="svg-vak" data-vak="G3">
+              <rect x="112" y="320" width="56" height="44" rx="4"/>
+              <text x="140" y="338" text-anchor="middle" class="vak-name">G3</text>
+              <text x="140" y="355" text-anchor="middle" class="vak-pct" id="pct-G3"></text>
+            </g>
+            <!-- G2 -->
+            <g id="svg-G2" class="svg-vak" data-vak="G2">
+              <rect x="174" y="320" width="56" height="44" rx="4"/>
+              <text x="202" y="338" text-anchor="middle" class="vak-name">G2</text>
+              <text x="202" y="355" text-anchor="middle" class="vak-pct" id="pct-G2"></text>
+            </g>
+            <!-- BG1 — business -->
+            <g id="svg-BG1" class="svg-vak svg-business" data-vak="BG1" data-business="1">
+              <rect x="236" y="320" width="50" height="44" rx="4"/>
+              <text x="261" y="338" text-anchor="middle" class="vak-name">BG1</text>
+              <text x="261" y="353" text-anchor="middle" class="vak-biz">Biz</text>
+            </g>
+            <!-- Pers — business -->
+            <g id="svg-Pers" class="svg-vak svg-business" data-vak="Pers" data-business="1">
+              <rect x="292" y="320" width="44" height="44" rx="4"/>
+              <text x="314" y="338" text-anchor="middle" class="vak-name">Pers</text>
+              <text x="314" y="353" text-anchor="middle" class="vak-biz">Pers</text>
+            </g>
+            <!-- BF — business -->
+            <g id="svg-BF" class="svg-vak svg-business" data-vak="BF" data-business="1">
+              <rect x="342" y="320" width="44" height="44" rx="4"/>
+              <text x="364" y="338" text-anchor="middle" class="vak-name">BF</text>
+              <text x="364" y="353" text-anchor="middle" class="vak-biz">Biz</text>
+            </g>
+            <!-- F -->
+            <g id="svg-F" class="svg-vak" data-vak="F">
+              <rect x="392" y="320" width="32" height="44" rx="4"/>
+              <text x="408" y="338" text-anchor="middle" class="vak-name">F</text>
+              <text x="408" y="355" text-anchor="middle" class="vak-pct" id="pct-F"></text>
+            </g>
+            <!-- E3 -->
+            <g id="svg-E3" class="svg-vak" data-vak="E3">
+              <rect x="430" y="320" width="32" height="44" rx="4"/>
+              <text x="446" y="338" text-anchor="middle" class="vak-name">E3</text>
+              <text x="446" y="355" text-anchor="middle" class="vak-pct" id="pct-E3"></text>
+            </g>
+            <!-- E2 -->
+            <g id="svg-E2" class="svg-vak" data-vak="E2">
+              <rect x="469" y="320" width="32" height="44" rx="4"/>
+              <text x="485" y="338" text-anchor="middle" class="vak-name">E2</text>
+              <text x="485" y="355" text-anchor="middle" class="vak-pct" id="pct-E2"></text>
+            </g>
+
+            <!-- ═══ BE rij (2e rij onder veld) ═══ -->
+            <!-- BG2 — business -->
+            <g id="svg-BG2" class="svg-vak svg-business" data-vak="BG2" data-business="1">
+              <rect x="112" y="370" width="56" height="26" rx="3"/>
+              <text x="140" y="388" text-anchor="middle" class="vak-name" style="font-size:9px;">BG2</text>
+            </g>
+            <!-- BG3 — business -->
+            <g id="svg-BG3" class="svg-vak svg-business" data-vak="BG3" data-business="1">
+              <rect x="174" y="370" width="56" height="26" rx="3"/>
+              <text x="202" y="388" text-anchor="middle" class="vak-name" style="font-size:9px;">BG3</text>
+            </g>
+            <!-- BE1 -->
+            <g id="svg-BE1" class="svg-vak" data-vak="BE1">
+              <rect x="500" y="370" width="36" height="26" rx="3"/>
+              <text x="518" y="381" text-anchor="middle" class="vak-name" style="font-size:9px;">BE1</text>
+              <text x="518" y="392" text-anchor="middle" class="vak-pct" id="pct-BE1" style="font-size:8px;"></text>
+            </g>
+            <!-- BE2 -->
+            <g id="svg-BE2" class="svg-vak" data-vak="BE2">
+              <rect x="458" y="370" width="36" height="26" rx="3"/>
+              <text x="476" y="381" text-anchor="middle" class="vak-name" style="font-size:9px;">BE2</text>
+              <text x="476" y="392" text-anchor="middle" class="vak-pct" id="pct-BE2" style="font-size:8px;"></text>
+            </g>
+            <!-- BE3 -->
+            <g id="svg-BE3" class="svg-vak" data-vak="BE3">
+              <rect x="416" y="370" width="36" height="26" rx="3"/>
+              <text x="434" y="381" text-anchor="middle" class="vak-name" style="font-size:9px;">BE3</text>
+              <text x="434" y="392" text-anchor="middle" class="vak-pct" id="pct-BE3" style="font-size:8px;"></text>
+            </g>
+
+          </svg>
+        </div>
+
+        <div style="display:flex;align-items:center;gap:16px;margin-top:4px;font-size:10px;color:var(--text-muted);flex-wrap:wrap;">
+          <span style="display:flex;align-items:center;gap:4px;"><span style="display:inline-block;width:12px;height:12px;background:#E3001B;border-radius:2px;"></span> &gt;90% vol</span>
+          <span style="display:flex;align-items:center;gap:4px;"><span style="display:inline-block;width:12px;height:12px;background:#f7a0a8;border-radius:2px;"></span> 70–90%</span>
+          <span style="display:flex;align-items:center;gap:4px;"><span style="display:inline-block;width:12px;height:12px;background:#fde8ea;border-radius:2px;"></span> &lt;70%</span>
+          <span style="display:flex;align-items:center;gap:4px;"><span style="display:inline-block;width:12px;height:12px;background:#1B1B1B;border-radius:2px;"></span> Uitvak</span>
+          <span style="display:flex;align-items:center;gap:4px;"><span style="display:inline-block;width:12px;height:12px;background:#3d3d3d;border-radius:2px;"></span> Business / Pers (zie Sponsoring)</span>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-header"><div class="card-title">Seizoenskaarten — verkoop voortgang</div><div class="card-sub">Bron: Times4</div></div>
+          <div class="stat-row"><span class="stat-label">Verkocht (huidig)</span><span class="stat-val">1.931</span></div>
+          <div class="stat-row"><span class="stat-label">Target seizoen</span><span class="stat-val">2.200</span></div>
+          <div class="stat-row"><span class="stat-label">Realisatie %</span><span class="stat-val" style="color:var(--success)">88%</span></div>
+          <div class="stat-row"><span class="stat-label">Verlengd (bestaand)</span><span class="stat-val">1.525 (79%)</span></div>
+          <div class="stat-row"><span class="stat-label">Nieuw (niet-verlengd)</span><span class="stat-val">406</span></div>
+          <div class="stat-row"><span class="stat-label">Nog te verkopen</span><span class="stat-val" style="color:var(--warning)">269</span></div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">Losse tickets per wedstrijdcategorie</div><div class="card-sub">Gem. per wedstrijd</div></div>
+          <div class="chart-wrap ch140"><canvas id="c-tck-cat"></canvas></div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /main -->
+</div><!-- /shell -->
+
+<script>
+const pages = ['main','ticketing','wedstrijden','sponsoring','events','horeca','marketing','merchandise'];
+const titles = {
+  main: 'Hoofddashboard',
+  ticketing: 'Ticketing',
+  wedstrijden: 'Wedstrijden',
+  sponsoring: 'Sponsoring',
+  events: 'Events',
+  horeca: 'Horeca',
+  marketing: 'Marketing',
+  merchandise: 'Merchandise'
+};
+const charts = {};
+let currentPage = 'main';
+
+function show(page, el) {
+  pages.forEach(p => {
+    document.getElementById('page-' + p).classList.remove('active');
+  });
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-' + page).classList.add('active');
+  if (el) el.classList.add('active');
+  document.getElementById('page-title').textContent = titles[page];
+  currentPage = page;
+  setTimeout(() => buildCharts(page), 60);
+}
+
+const RED = '#E3001B';
+const RED2 = '#c0001a';
+const RED3 = '#8a0012';
+const GRAY = '#8A8886';
+const LGRAY = '#E1DFDD';
+const months = ['jul','aug','sep','okt','nov','dec','jan','feb','mrt','apr','mei'];
+
+const baseOpts = (yFmt, legend = true) => ({
+  responsive: true,
+  maintainAspectRatio: false,
+  plugins: {
+    legend: { display: legend, labels: { color: '#605E5C', font: { size: 10, family: 'Segoe UI' }, boxWidth: 10, padding: 10 } },
+    tooltip: { backgroundColor: '#1B1B1B', titleFont: { size: 11 }, bodyFont: { size: 11 }, padding: 8, cornerRadius: 3 }
+  },
+  scales: {
+    x: { ticks: { color: '#8A8886', font: { size: 10 } }, grid: { color: 'rgba(0,0,0,0.04)', drawBorder: false }, border: { display: false } },
+    y: { ticks: { color: '#8A8886', font: { size: 10 }, callback: v => yFmt ? yFmt(v) : v }, grid: { color: 'rgba(0,0,0,0.04)', drawBorder: false }, border: { display: false } }
+  }
+});
+
+function mkChart(id, cfg) {
+  if (charts[id]) charts[id].destroy();
+  const el = document.getElementById(id);
+  if (!el) return;
+  charts[id] = new Chart(el, cfg);
+}
+
+function buildCharts(page) {
+  if (page === 'main') {
+    mkChart('c-main-omzet', {
+      type: 'line',
+      data: {
+        labels: months,
+        datasets: [
+          { label: '2025–26', data: [112,98,187,203,218,176,145,167,198,221,190], borderColor: RED, backgroundColor: 'rgba(227,0,27,0.07)', tension: .3, fill: true, pointRadius: 3, pointBackgroundColor: RED, borderWidth: 2 },
+          { label: '2024–25', data: [104,91,172,190,201,162,138,155,181,204,174], borderColor: GRAY, backgroundColor: 'transparent', tension: .3, fill: false, pointRadius: 0, borderDash: [4,3], borderWidth: 1.5 }
+        ]
+      },
+      options: { ...baseOpts(v => '€' + Math.round(v) + 'K') }
+    });
+    mkChart('c-main-pie', {
+      type: 'doughnut',
+      data: {
+        labels: ['Sponsoring','Horeca','Marketing','Events','Merchandise'],
+        datasets: [{ data: [912,394,213,255,162], backgroundColor: [RED,'#c0001a','#8a0012','#5a0009','#3a0006'], borderWidth: 0, hoverOffset: 4 }]
+      },
+      options: { responsive: true, maintainAspectRatio: false, cutout: '62%', plugins: { legend: { position: 'right', labels: { color: '#605E5C', font: { size: 10 }, boxWidth: 10, padding: 8 } }, tooltip: { backgroundColor: '#1B1B1B', padding: 8, cornerRadius: 3, bodyFont: { size: 11 } } } }
+    });
+  }
+
+  if (page === 'wedstrijden') {
+    mkChart('c-wed-piek', {
+      type: 'bar',
+      data: {
+        labels: ['−90 min','−60 min','−30 min','Aftrap','Rust','+30 min','Na afloop'],
+        datasets: [{ label: 'Bestellingen', data: [120,340,890,1240,680,420,180], backgroundColor: RED, borderRadius: 2 }]
+      },
+      options: { ...baseOpts(null, false) }
+    });
+  }
+
+  if (page === 'sponsoring') {
+    // Donut: realisatie 83%
+    mkChart('c-spon-donut-real', {
+      type: 'doughnut',
+      data: {
+        datasets: [{ data: [83, 17], backgroundColor: ['#E3001B', '#F0EEEC'], borderWidth: 0, hoverOffset: 0 }]
+      },
+      options: { responsive: true, maintainAspectRatio: true, cutout: '72%', plugins: { legend: { display: false }, tooltip: { enabled: false } }, animation: { animateRotate: true, duration: 800 } }
+    });
+    // Donut: retentie 87%
+    mkChart('c-spon-donut-ret', {
+      type: 'doughnut',
+      data: {
+        datasets: [{ data: [87, 13], backgroundColor: ['#107C10', '#F0EEEC'], borderWidth: 0, hoverOffset: 0 }]
+      },
+      options: { responsive: true, maintainAspectRatio: true, cutout: '72%', plugins: { legend: { display: false }, tooltip: { enabled: false } }, animation: { animateRotate: true, duration: 800 } }
+    });
+  }
+
+  if (page === 'events') {
+    mkChart('c-ev-maand', {
+      type: 'bar',
+      data: {
+        labels: months,
+        datasets: [{ label: 'Events', data: [3,5,8,9,11,7,4,6,8,9,6], backgroundColor: RED, borderRadius: 2 }]
+      },
+      options: { ...baseOpts(null, false) }
+    });
+    mkChart('c-ev-herkomst', {
+      type: 'doughnut',
+      data: {
+        labels: ['Brochure','Partners','Campagne','Anders'],
+        datasets: [{ data: [34,28,22,16], backgroundColor: [RED, '#c0001a', '#8a0012', '#5a0009'], borderWidth: 0, hoverOffset: 4 }]
+      },
+      options: { responsive: true, maintainAspectRatio: false, cutout: '58%', plugins: { legend: { position: 'right', labels: { color: '#605E5C', font: { size: 10 }, boxWidth: 10, padding: 6 } }, tooltip: { backgroundColor: '#1B1B1B', padding: 8, cornerRadius: 3 } } }
+    });
+    mkChart('c-ev-fnb', {
+      type: 'bar',
+      data: {
+        labels: ['Q1','Q2','Q3','Q4'],
+        datasets: [
+          { label: 'F&B omzet', data: [42000,54000,28000,31000], backgroundColor: RED, borderRadius: 2 },
+          { label: 'Non-F&B omzet', data: [38000,47000,24000,28000], backgroundColor: '#8a0012', borderRadius: 2 }
+        ]
+      },
+      options: { ...baseOpts(v => '€' + Math.round(v/1000) + 'K'), scales: { x: { stacked: true, ticks: { color: '#8A8886', font: { size: 10 } }, grid: { color: 'rgba(0,0,0,0.04)' }, border: { display: false } }, y: { stacked: true, ticks: { color: '#8A8886', font: { size: 10 }, callback: v => '€' + Math.round(v/1000) + 'K' }, grid: { color: 'rgba(0,0,0,0.04)' }, border: { display: false } } } }
+    });
+    mkChart('c-ev-ruimte', {
+      type: 'bar',
+      data: {
+        labels: ['Business lounge','Skybox','Vergaderzaal','Buiten'],
+        datasets: [{ label: 'Omzet', data: [112000,64000,38000,18000], backgroundColor: [RED, '#c0001a', '#8a0012', '#5a0009'], borderRadius: 2 }]
+      },
+      options: { ...baseOpts(v => '€' + Math.round(v/1000) + 'K', false), indexAxis: 'y' }
+    });
+  }
+
+  if (page === 'horeca') {
+    mkChart('c-hor-tijdvak', {
+      type: 'bar',
+      data: {
+        labels: ['−90 min','−60 min','−30 min','Aftrap','Rust','+30 min','Na afloop'],
+        datasets: [{ label: 'Bestellingen', data: [80,210,620,980,540,310,140], backgroundColor: RED, borderRadius: 2 }]
+      },
+      options: { ...baseOpts(null, false) }
+    });
+    mkChart('c-hor-punt', {
+      type: 'bar',
+      data: {
+        labels: ['Hoofdbar','Business L.','F-Bar','Kiosk Noord','Kiosk Zuid'],
+        datasets: [{ label: 'Omzet (€)', data: [148000,92000,74000,43000,37000], backgroundColor: [RED,'#c0001a','#8a0012','#5a0009','#3a0006'], borderRadius: 2 }]
+      },
+      options: { ...baseOpts(v => '€' + Math.round(v/1000) + 'K', false), indexAxis: 'y' }
+    });
+  }
+
+  if (page === 'marketing') {
+    mkChart('c-mkt-db', {
+      type: 'line',
+      data: {
+        labels: months,
+        datasets: [
+          { label: 'Totaal', data: [30000,30400,31200,31800,32500,32900,33200,33600,33900,34200,34200], borderColor: RED, backgroundColor: 'rgba(227,0,27,0.07)', tension: .3, fill: true, pointRadius: 2, borderWidth: 2 },
+          { label: 'Mailbaar', data: [14200,14600,15100,15700,16400,17000,17600,18200,19000,19600,19800], borderColor: '#8a0012', backgroundColor: 'transparent', tension: .3, fill: false, pointRadius: 2, borderWidth: 1.5 },
+          { label: 'SSO-accounts', data: [7200,7400,7600,7800,8000,8100,8200,8300,8400,8550,8620], borderColor: '#0078D4', backgroundColor: 'transparent', tension: .3, fill: false, pointRadius: 2, borderWidth: 1.5, borderDash: [3,3] }
+        ]
+      },
+      options: { ...baseOpts(v => Math.round(v/1000) + 'K') }
+    });
+  }
+
+  if (page === 'ticketing') {
+    updateStadionMap('gem');
+    mkChart('c-tck-cat', {
+      type: 'bar',
+      data: {
+        labels: ['Cat. 1 (Top 7)', 'Cat. 2 (8–20)', 'Cat. 3 (Jong)'],
+        datasets: [{ label: 'Gem. losse tickets', data: [2840, 1920, 980], backgroundColor: [RED, '#c0001a', '#8a0012'], borderRadius: 2 }]
+      },
+      options: { ...baseOpts(null, false) }
+    });
+  }
+
+  if (page === 'merchandise') {
+    mkChart('c-mch-trend', {
+      type: 'line',
+      data: {
+        labels: months,
+        datasets: [
+          { label: '2025–26', data: [8200,9100,16400,14200,12800,9600,7400,11200,18400,21600,14800], borderColor: RED, backgroundColor: 'rgba(227,0,27,0.07)', tension: .3, fill: true, pointRadius: 2, borderWidth: 2 },
+          { label: '2024–25', data: [7800,8600,15100,13400,11900,9100,7100,10800,17200,20100,13700], borderColor: GRAY, backgroundColor: 'transparent', tension: .3, fill: false, pointRadius: 0, borderDash: [4,3], borderWidth: 1.5 }
+        ]
+      },
+      options: { ...baseOpts(v => '€' + Math.round(v/1000) + 'K') }
+    });
+    mkChart('c-mch-kanaal', {
+      type: 'bar',
+      data: {
+        labels: ['Q1','Q2','Q3','Q4'],
+        datasets: [
+          { label: 'Webshop', data: [28400,31200,18600,20200], backgroundColor: RED, borderRadius: 2 },
+          { label: 'Fanshop', data: [18100,19400,11200,15300], backgroundColor: '#8a0012', borderRadius: 2 }
+        ]
+      },
+      options: { ...baseOpts(v => '€' + Math.round(v/1000) + 'K'), scales: { x: { stacked: true, ticks: { color: '#8A8886', font: { size: 10 } }, grid: { color: 'rgba(0,0,0,0.04)' }, border: { display: false } }, y: { stacked: true, ticks: { color: '#8A8886', font: { size: 10 }, callback: v => '€' + Math.round(v/1000) + 'K' }, grid: { color: 'rgba(0,0,0,0.04)' }, border: { display: false } } } }
+    });
+  }
+}
+
+// ═══ STADION MAP DATA & RENDER ═══
+const wedstrijdData = {
+  gem: { label: 'Gemiddeld alle wedstrijden', data: { A1:94, A2:97, C1:91, C2:88, C3:85, D:92, G3:78, G2:82, F:87, E3:86, E2:83, BE1:96, BE2:94, BE3:91 } },
+  w1:  { label: '9 aug · Roda JC (Cat. 2)',       data: { A1:88, A2:91, C1:85, C2:82, C3:79, D:87, G3:72, G2:75, F:81, E3:79, E2:77, BE1:90, BE2:88, BE3:84 } },
+  w2:  { label: '23 aug · Jong Ajax (Cat. 3)',     data: { A1:71, A2:74, C1:69, C2:66, C3:63, D:72, G3:58, G2:61, F:65, E3:63, E2:61, BE1:74, BE2:71, BE3:68 } },
+  w3:  { label: '13 sep · FC Groningen (Cat. 2)', data: { A1:92, A2:95, C1:89, C2:86, C3:83, D:91, G3:77, G2:80, F:85, E3:84, E2:81, BE1:95, BE2:93, BE3:90 } },
+  w4:  { label: '4 okt · PSV (Cat. 1)',            data: { A1:99, A2:100, C1:98, C2:97, C3:96, D:99, G3:91, G2:93, F:96, E3:95, E2:94, BE1:100, BE2:99, BE3:98 } },
+  w5:  { label: '25 okt · NAC Breda (Cat. 2)',    data: { A1:89, A2:92, C1:87, C2:84, C3:81, D:88, G3:74, G2:77, F:82, E3:80, E2:78, BE1:91, BE2:90, BE3:86 } },
+  w6:  { label: '22 nov · Ajax (Cat. 1)',          data: { A1:100, A2:100, C1:99, C2:98, C3:97, D:100, G3:93, G2:95, F:98, E3:97, E2:96, BE1:100, BE2:100, BE3:99 } },
+  w7:  { label: '14 feb · Jong PSV (Cat. 3)',      data: { A1:68, A2:71, C1:66, C2:63, C3:60, D:69, G3:55, G2:58, F:62, E3:60, E2:58, BE1:71, BE2:68, BE3:65 } },
+  w8:  { label: '7 mrt · Feyenoord (Cat. 1)',      data: { A1:100, A2:100, C1:100, C2:99, C3:98, D:100, G3:94, G2:96, F:99, E3:98, E2:97, BE1:100, BE2:100, BE3:100 } },
+  w9:  { label: '4 apr · NEC (Cat. 2)',            data: { A1:87, A2:90, C1:85, C2:82, C3:79, D:86, G3:73, G2:76, F:80, E3:79, E2:77, BE1:89, BE2:87, BE3:84 } },
+  w10: { label: '2 mei · FC Utrecht (Cat. 2)',     data: { A1:93, A2:96, C1:91, C2:88, C3:86, D:93, G3:79, G2:82, F:87, E3:86, E2:84, BE1:96, BE2:94, BE3:92 } },
+};
+
+function updateStadionMap(key) {
+  const entry = wedstrijdData[key];
+  if (!entry) return;
+
+  // update card title
+  const titleEl = document.getElementById('stadium-card-title');
+  if (titleEl) titleEl.textContent = 'Bezetting per vak — ' + entry.label;
+
+  const vakData = entry.data;
+
+  Object.entries(vakData).forEach(([id, pct]) => {
+    const g = document.getElementById('svg-' + id);
+    if (!g) return;
+    const rect = g.querySelector('rect');
+    const pctEl = document.getElementById('pct-' + id);
+
+    let bg;
+    if (pct >= 90)      { bg = '#E3001B'; }
+    else if (pct >= 70) { bg = '#f7a0a8'; }
+    else                { bg = '#fde8ea'; }
+
+    const darkText = pct < 90;
+    if (rect) rect.setAttribute('fill', bg);
+    if (pctEl) {
+      pctEl.textContent = pct + '%';
+      pctEl.setAttribute('fill', darkText ? '#1B1B1B' : 'rgba(255,255,255,0.9)');
+    }
+    const nameEl = g.querySelector('.vak-name');
+    if (nameEl) nameEl.setAttribute('fill', darkText ? '#1B1B1B' : '#fff');
+  });
+}
+
+// chip toggle (visual only)
+document.querySelectorAll('.chip').forEach(chip => {
+  chip.addEventListener('click', () => {
+    chip.closest('.filter-bar').querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+    chip.classList.add('active');
+  });
+});
+
+setTimeout(() => buildCharts('main'), 150);
+</script>
+</body>
+</html>
